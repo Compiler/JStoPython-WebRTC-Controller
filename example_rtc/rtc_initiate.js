@@ -26,6 +26,7 @@ function initializeBeforeCreatingOffer() {
 async function prepareOfferSDP(peerConnection) {
     const localOffer = await peerConnection.createOffer()
     console.log(localOffer)
+    //send_offer(localOffer, 34)
     await peerConnection.setLocalDescription(localOffer)
     await waitForAllICE(peerConnection)
     const localOfferWithICECandidates = peerConnection.localDescription
@@ -34,9 +35,9 @@ async function prepareOfferSDP(peerConnection) {
   }
 async function receiveAnswerSDP(peerConnection) {
     console.log("Will wait for answer")
-    // const remoteAnswerString = prompt("Peer answer");
-    // const remoteAnswer = JSON.parse(remoteAnswerString)
-    // peerConnection.setRemoteDescription(remoteAnswer)
+    const remoteAnswerString = prompt("Peer answer");
+    const remoteAnswer = JSON.parse(remoteAnswerString)
+    peerConnection.setRemoteDescription(remoteAnswer)
   }
 async function start(){
     const peerConnection = initializeBeforeCreatingOffer()
