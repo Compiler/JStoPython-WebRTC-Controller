@@ -38,7 +38,7 @@ app.get('/get_offer_:uuid(*)', function (req, res) {
 
 app.get('/get_answer_:uuid(*)', function (req, res) {
     console.log("requested an answer")
-    console.log(answer_[`${req.params.uuid}`])
+    console.log(answer[`${req.params.uuid}`])
     res.status(200).send(answer[`${req.params.uuid}`]);
  })
 

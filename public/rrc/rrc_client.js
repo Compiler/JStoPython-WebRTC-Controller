@@ -9,10 +9,19 @@ function waitForAllICE(peerConnection) {
         setTimeout(() => reject("Waited too long for ice candidates"), 1000)
     }) 
   }
-
+//type RTCPeerConnectionState = "closed" | "connected" | "connecting" | "disconnected" | "failed" | "new";
 function addConnectionStateHandler(peerConnection) {
     peerConnection.onconnectionstatechange = function () {
         console.log("State:",peerConnection.connectionState)
+        switch(peerConnection.connectionState){
+            case "connected":
+                alert("Connection Established");
+                break;
+            default:
+                
+                break;
+                 
+        }
     };
 }
 
@@ -40,8 +49,10 @@ async function prepareOfferSDP(peerConnection) {
   }
 async function receiveAnswerSDP(peerConnection) {
     console.log("Will wait for answer")
-    const remoteAnswerString = prompt("Peer answer");
-    const remoteAnswer = JSON.parse(remoteAnswerString)
+    const remoteAnswerString = await get_answer('34')
+    console.log(JSON.stringify(remoteAnswerString))
+    let pause = prompt("Peer answer");
+    const remoteAnswer = JSON.parse(JSON.stringify(remoteAnswerString))
     peerConnection.setRemoteDescription(remoteAnswer)
   }
 async function start(){

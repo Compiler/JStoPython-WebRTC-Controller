@@ -7,7 +7,6 @@
 // xhr.send(data);
 
 
-
 async function send_offer(offer, client_id){
     console.log("offer===",offer)
     fetch(`http://0.0.0.0:8081/post_offer_${client_id}`,
@@ -42,7 +41,7 @@ async function send_answer(answer, client_id){
     .then((data) => console.log(data));
 }
 async function get_answer(client_id){
-    fetch(`http://0.0.0.0:8081/get_answer_${client_id}`,
+    return fetch(`http://0.0.0.0:8081/get_answer_${client_id}`,
         {
             method: "GET", 
             mode: "cors", 
@@ -54,7 +53,7 @@ async function get_answer(client_id){
                 },
     })
     .then((response) => response.json())
-    .then((data) => console.log(data));
+    //.then((data) => return data);
 }
 
 

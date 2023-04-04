@@ -35,7 +35,7 @@ async function receiveOfferSDP(peerConnection) {
     // console.log(JSON.stringify(remoteOfferString))
     // inputted = "{"+JSON.stringify(remoteOfferString)+"}"
     // console.log(inputted)
-    // remoteOfferString = prompt("Peer offer");
+    //remoteOfferString = prompt("Peer offer");
     const remoteOffer = new RTCSessionDescription(JSON.parse(remoteOfferString))
     await peerConnection.setRemoteDescription(remoteOffer)
 }
@@ -47,6 +47,10 @@ async function sendAnswerSDP(peerConnection) {
   const localAnswerWithICECandidates = peerConnection.localDescription
   console.log("localAnswerWithICECandidates:")
   console.log(JSON.stringify(localAnswerWithICECandidates))
+  send_answer(JSON.stringify({
+    'type':'answer', 
+    'sdp':localAnswerWithICECandidates.sdp
+    }), 34)
 }
 
 start()
