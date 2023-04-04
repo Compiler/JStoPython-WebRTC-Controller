@@ -10,6 +10,7 @@ Use p2p connection to control robot through webcam input.
 - Server is local for now
 - Production will require TURN server. This is dev setup
 ## How to use
+- pip install aiortc
 - npm i
 - Launch the server(for signaling)
 - Point robot and rc controller to server
