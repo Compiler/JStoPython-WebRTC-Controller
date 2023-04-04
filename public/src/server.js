@@ -13,32 +13,34 @@ app.get('/', function (req, res) {
  })
 
  app.post('/post_offer_:uuid(*)', function (req, res) {
-    console.log("submitted an offer")
+    //console.log("submitted an offer to server")
+
     offer[`${req.params.uuid}`] = req.body
     console.log(offer)
+    //console.log(req.params.uuid + ": " + req.body)
     res.status(200).json({ success: true});
  })
 
  app.post('/post_answer_:uuid(*)', function (req, res) {
-    console.log("submitted an answer")
-    console.log(req.body)
-    console.log(req.params.uuid)
+    //console.log("submitted an answer")
+    //console.log(req.body)
+    //console.log(req.params.uuid)
     answer[`${req.params.uuid}`] = req.body
-    console.log(answer)
+    //console.log(answer)
     res.status(200).json({ success: true});
  })
 
 
 
 app.get('/get_offer_:uuid(*)', function (req, res) {
-    console.log("requested an offer")
-    console.log("Return:",offer[`${req.params.uuid}`])
+    //console.log("requested an offer")
+    //console.log("Return:",offer[`${req.params.uuid}`])
     res.status(200).send(offer[`${req.params.uuid}`]);
  })
 
 app.get('/get_answer_:uuid(*)', function (req, res) {
-    console.log("requested an answer")
-    console.log(answer[`${req.params.uuid}`])
+    //console.log("requested an answer")
+    //console.log(answer[`${req.params.uuid}`])
     res.status(200).send(answer[`${req.params.uuid}`]);
  })
 
@@ -49,5 +51,5 @@ app.get('/get_answer_:uuid(*)', function (req, res) {
 var server = app.listen(8081, function () {
    var host = server.address().address
    var port = server.address().port
-   console.log("Example app listening at http://%s:%s", host, port)
+   //console.log("Example app listening at http://%s:%s", host, port)
 })

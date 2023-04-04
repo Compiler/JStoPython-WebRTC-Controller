@@ -18,7 +18,7 @@ function addConnectionStateHandler(peerConnection) {
                 alert("Connection Established");
                 break;
             default:
-                
+                console.log("State:",peerConnection.connectionState)
                 break;
                  
         }
@@ -49,11 +49,13 @@ async function prepareOfferSDP(peerConnection) {
   }
 async function receiveAnswerSDP(peerConnection) {
     console.log("Will wait for answer")
-    const remoteAnswerString = await get_answer('34')
-    console.log(JSON.stringify(remoteAnswerString))
-    let pause = prompt("Peer answer");
-    const remoteAnswer = JSON.parse(JSON.stringify(remoteAnswerString))
-    peerConnection.setRemoteDescription(remoteAnswer)
+    let remoteAnswerString = await get_answer('34')
+    remoteAnswerString = JSON.stringify(remoteAnswerString)
+    console.log(remoteAnswerString)
+    remoteAnswerString = prompt("Peer answer");
+    const remoteAnswer = JSON.parse(remoteAnswerString)
+    console.log(remoteAnswer)
+    peerConnection.setRemoteDescription(remoteAnswer)//d
   }
 async function start(){
     const peerConnection = initializeBeforeCreatingOffer()

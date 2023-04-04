@@ -5,10 +5,27 @@
 // xhr.open("POST","localhost:8081/client_44",true);
 // xhr.setRequestHeader("Content-Type","application/json");
 // xhr.send(data);
+const stun_servers = {
+    iceServers:[
+        {
+            urls:['stun:stun1.1.google.com:19302', 'stun:stun2.1.google.com:19302']
+        }
+    ]
+}
+function print_state(pc){
+    console.log("Done:\nLocal:",JSON.stringify(pc.localDescription),'\nRemote:',JSON.stringify(pc.remoteDescription))
 
+}
+function waitForAllICE(peerConnection) {
+    return new Promise((fufill, reject) => {
+        peerConnection.onicecandidate = (iceEvent) => {
+            if (iceEvent.candidate === null) fufill()
+        }
+        setTimeout(() => reject("Waited too long for ice candidates"), 10000)
+    }) 
+  }
 
 async function send_offer(offer, client_id){
-    console.log("offer===",offer)
     fetch(`http://0.0.0.0:8081/post_offer_${client_id}`,
         {
             method: "POST", 

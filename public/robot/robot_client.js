@@ -49,7 +49,7 @@ async function sendAnswerSDP(peerConnection) {
   console.log(JSON.stringify(localAnswerWithICECandidates))
   send_answer(JSON.stringify({
     'type':'answer', 
-    'sdp':localAnswerWithICECandidates.sdp
+    'sdp':localAnswerWithICECandidates.sdp//idk
     }), 34)
 }
 
