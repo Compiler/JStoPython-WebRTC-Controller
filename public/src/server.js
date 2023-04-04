@@ -14,9 +14,9 @@ app.get('/', function (req, res) {
 
  app.post('/post_offer_:uuid(*)', function (req, res) {
     //console.log("submitted an offer to server")
-
+    
+    console.log(req.body)
     offer[`${req.params.uuid}`] = req.body
-    console.log(offer)
     //console.log(req.params.uuid + ": " + req.body)
     res.status(200).json({ success: true});
  })
