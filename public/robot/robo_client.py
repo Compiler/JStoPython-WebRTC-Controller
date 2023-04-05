@@ -5,7 +5,10 @@ import time
 
 from aiortc import RTCIceCandidate, RTCPeerConnection, RTCSessionDescription
 import requests
+import json
 
+lc = RTCPeerConnection()
+stay_alive = True
 
 '''
 async function send_offer(offer, client_id){
@@ -52,15 +55,42 @@ def channel_log(channel, t, message):
     print("channel(%s) %s %s" % (channel.label, t, message))
     
 
+
+
+        
+async def setup_callbacks(lc : RTCPeerConnection, dc):
+    #dc.onmessage = lambda e : print("Message from robot:", e.data, e)
+
+    @dc.on("message")
+    def on_message(message):
+        if isinstance(message, str):
+            print(message)
+
+    @lc.on("connectionstatechange")
+    async def on_connectionstatechange():
+        print("Connection state is %s", lc.connectionState)
+        if lc.connectionState == "failed":
+            stay_alive = False
+            await lc.close()
+        if lc.connectionState == 'disconnected':
+            stay_alive = False
+            
+    @lc.on("icecandidate")
+    async def on_icecandidate(e):
+        print("SDP:", json.dumps(lc.localDescription, separators=(',', ':')))
+        
+        
+        
+        
         
 async def start(lc : RTCPeerConnection):
     dc = lc.createDataChannel("input")
     channel_log(dc, "-", "created by local party")
-    dc.onmessage = lambda e : print("Message from robot:", e.data, e)
-    dc.onopen = lambda e : print("Input connection opened")
-    import json
-   
-    lc.onicecandidate = lambda e : print("SDP:", json.dumps(lc.localDescription, separators=(',', ':'))); 
+
+    
+    await setup_callbacks(lc, dc)
+    print(dc.event_names)
+    #lc.onicecandidate = lambda e : print("SDP:", json.dumps(lc.localDescription, separators=(',', ':'))); 
     offer = await lc.createOffer()
     await lc.setLocalDescription(offer)
     while True:
@@ -79,15 +109,14 @@ async def start(lc : RTCPeerConnection):
     answer_wrapped = RTCSessionDescription(answer['sdp'], answer['type'])
     await lc.setRemoteDescription(answer_wrapped)
     
-    await asyncio.sleep(5)
     while True:
-        dc.send("-hello")
+        #dc.send(json.dumps({"now": time.time() * 1000}))
+        #await dc._RTCDataChannel__transport._data_channel_flush()
+        #await dc._RTCDataChannel__transport._transmit()
         await asyncio.sleep(1)
-    
     
 if __name__ == "__main__":
     
-    lc = RTCPeerConnection()
     #asyncio.run(start(lc))
     # run event loop
     loop = asyncio.get_event_loop()
@@ -96,4 +125,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
     finally:
+        while(stay_alive):asyncio.run(asyncio.sleep(10))
         loop.run_until_complete(lc.close())
