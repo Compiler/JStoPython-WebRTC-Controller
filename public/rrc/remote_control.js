@@ -25,6 +25,18 @@ let rc = undefined;
 async function start(){
     rc = new RTCPeerConnection() //remote connection
     addConnectionStateHandler(rc)
+
+    vp2 = document.getElementById('robot-view')
+    remoteStream = new MediaStream()//setup the MediaStream, add the data from remote later
+    vp2.srcObject = remoteStream
+    vp2.addEventListener('loadedmetadata', () =>{
+        vp2.play()
+    })
+    vp2.append(remoteStream)
+
+    rc.ontrack = e=>{
+        e.streams[0].getTracks().forEach(track => remoteStream.addTrack(track))
+    }
     rc.onicecandidate = e => {
         console.log("SDP:", JSON.stringify(rc.localDescription))
         send_answer(JSON.stringify(rc.localDescription), 34) //3
@@ -36,6 +48,8 @@ async function start(){
         }
         rc.dc.onopen = e=> console.log("Data Channel Connection opened on remote")
     }
+
+
 
     offer = await get_offer('34')//2
     console.log("received offer:",offer);

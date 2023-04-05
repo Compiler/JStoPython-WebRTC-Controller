@@ -5,29 +5,60 @@ import time
 
 from aiortc import RTCIceCandidate, RTCPeerConnection, RTCSessionDescription
 import requests
+import platform
+import os
 import json
+
+import cv2
+import numpy as np
+
 
 lc = RTCPeerConnection()
 stay_alive = True
+from aiortc.contrib.media import MediaPlayer, MediaRelay
+from aiortc.rtcrtpsender import RTCRtpSender
 
-'''
-async function send_offer(offer, client_id){
-    fetch(`http://0.0.0.0:8081/post_offer_${client_id}`,
-        {
-            method: "POST", 
-            mode: "cors", 
-            headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin" : "*", 
-            "Access-Control-Allow-Credentials" : true 
-            },
-            body: offer
-    })
-    .then((response) => response.json())
-    .then((data) => console.log("DATA:", data));
-}
-'''
+ROOT = os.path.dirname(__file__)
 
+
+relay = None
+webcam = None
+
+
+def create_local_tracks(play_from, decode):
+    global relay, webcam
+
+    if play_from:
+        player = MediaPlayer(play_from, decode=decode)
+        return player.audio, player.video
+    else:
+        options = {"framerate": "30", "video_size": "640x480"}
+        if relay is None:
+            if platform.system() == "Darwin":
+                webcam = MediaPlayer(
+                    "default:none", format="avfoundation", options=options
+                )
+            elif platform.system() == "Windows":
+                webcam = MediaPlayer(
+                    "video=Integrated Camera", format="dshow", options=options
+                )
+            else:
+                try:
+                    webcam = MediaPlayer("/dev/video0", format="v4l2", options=options)
+                except Exception:
+                    webcam = MediaPlayer("/dev/video1", format="v4l2", options=options)
+            relay = MediaRelay()
+        return None, relay.subscribe(webcam.video)
+
+def force_codec(lc, sender, forced_codec):
+    kind = forced_codec.split("/")[0]
+    codecs = RTCRtpSender.getCapabilities(kind).codecs
+    transceiver = next(t for t in lc.getTransceivers() if t.sender == sender)
+    transceiver.setCodecPreferences(
+        [codec for codec in codecs if codec.mimeType == forced_codec]
+    )
+    
+    
 async def send_offer(data, client_id):
     requests.post(
         url=f"http://0.0.0.0:8081/post_offer_{client_id}",
@@ -85,9 +116,23 @@ async def setup_callbacks(lc : RTCPeerConnection, dc):
         
 async def start(lc : RTCPeerConnection):
     dc = lc.createDataChannel("input")
-    channel_log(dc, "-", "created by local party")
+    
+    
+    
+    # open media source
+    audio, video = create_local_tracks(
+        None, decode=True
+    )
+    print("VIdeo:", video)
+    if audio: audio_sender = lc.addTrack(audio)
+    if video:
+        video_sender = lc.addTrack(video)
+        force_codec(lc, video_sender, 'video/h264')
 
     
+    
+    channel_log(dc, "-", "created by local party")
+
     await setup_callbacks(lc, dc)
     print(dc.event_names)
     #lc.onicecandidate = lambda e : print("SDP:", json.dumps(lc.localDescription, separators=(',', ':'))); 
@@ -109,14 +154,17 @@ async def start(lc : RTCPeerConnection):
     answer_wrapped = RTCSessionDescription(answer['sdp'], answer['type'])
     await lc.setRemoteDescription(answer_wrapped)
     
+    #task = asyncio.Task(start_cam())
     while True:
         #dc.send(json.dumps({"now": time.time() * 1000}))
         #await dc._RTCDataChannel__transport._data_channel_flush()
         #await dc._RTCDataChannel__transport._transmit()
         await asyncio.sleep(1)
     
+
+
+
 if __name__ == "__main__":
-    
     #asyncio.run(start(lc))
     # run event loop
     loop = asyncio.get_event_loop()
@@ -125,5 +173,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
     finally:
-        while(stay_alive):asyncio.run(asyncio.sleep(10))
+        #while(stay_alive):asyncio.run(asyncio.sleep(10))
         loop.run_until_complete(lc.close())
