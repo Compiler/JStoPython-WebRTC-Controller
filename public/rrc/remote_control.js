@@ -7,6 +7,7 @@ function addConnectionStateHandler(peerConnection) {
                 document.addEventListener('keydown', (event) => {
                     var key = event.key;
                     var code = event.code;
+                    console.log("Sending:", code)
                     rc.dc.send(code)
                   }, false);
                 break;
@@ -24,7 +25,10 @@ let rc = undefined;
 async function start(){
     rc = new RTCPeerConnection() //remote connection
     addConnectionStateHandler(rc)
-    rc.onicecandidate = e => console.log("SDP:", JSON.stringify(rc.localDescription))
+    rc.onicecandidate = e => {
+        console.log("SDP:", JSON.stringify(rc.localDescription))
+        send_answer(JSON.stringify(rc.localDescription), 34) //3
+    }
     rc.ondatachannel = e =>{
         rc.dc = e.channel
         rc.dc.onmessage = e =>{
@@ -44,7 +48,6 @@ async function start(){
     await send_answer(JSON.stringify(rc.localDescription), 34) //3
     console.log("Submitted answer")
 }
-
 
 
 start().then(a=>{

@@ -48,13 +48,19 @@ async def get_answer(client_id):
             },)
     return response
 
+def channel_log(channel, t, message):
+    print("channel(%s) %s %s" % (channel.label, t, message))
+    
 
+        
 async def start(lc : RTCPeerConnection):
     dc = lc.createDataChannel("input")
-    dc.onmessage = lambda e : print("Message from robot:", e.data)
+    channel_log(dc, "-", "created by local party")
+    dc.onmessage = lambda e : print("Message from robot:", e.data, e)
     dc.onopen = lambda e : print("Input connection opened")
     import json
-    lc.onicecandidate = lambda e : print("SDP:", json.dumps(lc.localDescription, separators=(',', ':')))
+   
+    lc.onicecandidate = lambda e : print("SDP:", json.dumps(lc.localDescription, separators=(',', ':'))); 
     offer = await lc.createOffer()
     await lc.setLocalDescription(offer)
     while True:
@@ -67,16 +73,27 @@ async def start(lc : RTCPeerConnection):
         }, separators=(',', ':'))
     await send_offer(req_body, 34)
     
-    time.sleep(4)
+    await asyncio.sleep(4)
     answer = await get_answer(34)
     answer = answer.json()
     answer_wrapped = RTCSessionDescription(answer['sdp'], answer['type'])
     await lc.setRemoteDescription(answer_wrapped)
     
+    await asyncio.sleep(5)
+    while True:
+        dc.send("-hello")
+        await asyncio.sleep(1)
     
-    print(f"Local: {str(lc.localDescription)}\nRemote: {lc.remoteDescription}")
     
 if __name__ == "__main__":
     
     lc = RTCPeerConnection()
-    asyncio.run(start(lc))
+    #asyncio.run(start(lc))
+    # run event loop
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(start(lc))
+    except KeyboardInterrupt:
+        pass
+    finally:
+        loop.run_until_complete(lc.close())
