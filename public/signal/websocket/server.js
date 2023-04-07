@@ -13,11 +13,9 @@ const websocket = new WebSocketServer({
 websocket.on('request', req=>{
     
     connection = req.accept(null, req.origin)//accept req for 101 upgrade from client
-    connection.on('onopen', e=>{console.log("connection opened on server")})
-    connection.on('onclose', e=>{console.log("connection close on server")})
-    connection.on('onmessage', msg=>{
-        console.log("Message from peer:", msg)
-    })
+    connection.on('open', e=>{console.log("connection opened on server")})
+    connection.on('close', e=>{console.log("connection close on server")})
+
     connection.on('message', msg=>{
         console.log("Message from peer:", msg)
     })
