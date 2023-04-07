@@ -144,12 +144,17 @@ async def start(lc : RTCPeerConnection):
             break
     req_body = json.dumps({
         'type':lc.localDescription.type,
-        'sdp':lc.localDescription.sdp
+        'sdp':lc.localDescription.sdp,
+        'client_id': 34,
+        'user:':'Robot'
         }, separators=(',', ':'))
-    await send_offer(req_body, 34)
     
-    await asyncio.sleep(4)
-    answer = await get_answer(34)
+    
+    #await send_offer(req_body, 34)
+    
+    answer = await send_and_get(req_body)
+    
+    #answer = await get_answer(34)
     answer = answer.json()
     answer_wrapped = RTCSessionDescription(answer['sdp'], answer['type'])
     await lc.setRemoteDescription(answer_wrapped)
@@ -163,15 +168,38 @@ async def start(lc : RTCPeerConnection):
     
 
 
+async def conn():
+    async with websockets.connect('ws://localhost:4000') as websocket:
+            await websocket.send("hello")
+            response = await websocket.recv()
+            print(response)
+async def send_and_get(msg):
+    async with websockets.connect('ws://localhost:4000') as websocket:
+            await websocket.send(msg)
+            return await websocket.recv()
+        
+async def getconn():
+    async with websockets.connect('ws://localhost:4000') as websocket:
+            return websocket
 
 if __name__ == "__main__":
     #asyncio.run(start(lc))
     # run event loop
-    loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(start(lc))
-    except KeyboardInterrupt:
-        pass
-    finally:
-        #while(stay_alive):asyncio.run(asyncio.sleep(10))
-        loop.run_until_complete(lc.close())
+    if(True):
+        import websockets
+
+        HOST = "localhost"  # The server's hostname or IP address
+        PORT = 4000  # The port used by the server
+
+        con = asyncio.run(conn())
+
+
+    else:
+        loop = asyncio.get_event_loop()
+        try:
+            loop.run_until_complete(start(lc))
+        except KeyboardInterrupt:
+            pass
+        finally:
+            #while(stay_alive):asyncio.run(asyncio.sleep(10))
+            loop.run_until_complete(lc.close())

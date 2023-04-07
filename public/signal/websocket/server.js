@@ -11,16 +11,19 @@ const websocket = new WebSocketServer({
 })
 
 websocket.on('request', req=>{
-    
     connection = req.accept(null, req.origin)//accept req for 101 upgrade from client
     connection.on('open', e=>{console.log("connection opened on server")})
     connection.on('close', e=>{console.log("connection close on server")})
-
+    const KEY = 'User:'
     connection.on('message', msg=>{
-        console.log("Message from peer:", msg)
+        try{
+            msg = JSON.parse(msg.utf8Data)
+        }catch{
+            console.log("Message is not JSON:", msg)
+        }
+
     })
 
-    connection.send("hello")
 
 })
 

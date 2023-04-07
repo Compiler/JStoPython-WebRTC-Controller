@@ -51,7 +51,11 @@ async function start(){
 
 
 
-    offer = await get_offer('34')//2
+    
+}
+
+
+async function get_offer_and_send(offer){
     console.log("received offer:",offer);
     await rc.setRemoteDescription(JSON.parse(offer))
     console.log("offer set on remote, need to send answer")
@@ -63,8 +67,6 @@ async function start(){
     console.log("Submitted answer")
 }
 
-
 start().then(a=>{
-    print_state(rc)
 })
 
