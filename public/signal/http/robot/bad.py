@@ -25,31 +25,21 @@ ROOT = os.path.dirname(__file__)
 relay = None
 webcam = None
 
-
+def get_video():
+    import numpy as np
+    x = np.load(f'{ROOT}/../../../../data/data/depth/0.npy')
+    y = cv2.applyColorMap(np.sqrt(x).astype(np.uint8), cv2.COLORMAP_HSV)
+    print(x.shape)
+    return y;
+    
 def create_local_tracks(play_from, decode):
     global relay, webcam
 
-    if play_from:
-        player = MediaPlayer(play_from, decode=decode)
-        return player.audio, player.video
-    else:
-        options = {"framerate": "30", "video_size": "640x480"}
-        if relay is None:
-            if platform.system() == "Darwin":
-                webcam = MediaPlayer(
-                    "default:none", format="avfoundation", options=options
-                )
-            elif platform.system() == "Windows":
-                webcam = MediaPlayer(
-                    "video=Integrated Camera", format="dshow", options=options
-                )
-            else:
-                try:
-                    webcam = MediaPlayer("/dev/video0", format="v4l2", options=options)
-                except Exception:
-                    webcam = MediaPlayer("/dev/video1", format="v4l2", options=options)
-            relay = MediaRelay()
-        return None, relay.subscribe(webcam.video)
+    #if play_from:
+        #player = MediaPlayer(play_from, decode=decode)
+        #return player.audio, player.video
+    player = MediaPlayer(f'{ROOT}/../../../../data/data/color/0.png', decode=decode)
+    return player.audio, player.video
 
 def force_codec(lc, sender, forced_codec):
     kind = forced_codec.split("/")[0]

@@ -1,4 +1,5 @@
 const http = require('http')
+const { parse } = require('path')
 const WebSocketServer = require('websocket').server
 let connection = null
 
@@ -14,10 +15,15 @@ websocket.on('request', req=>{
     connection = req.accept(null, req.origin)//accept req for 101 upgrade from client
     connection.on('open', e=>{console.log("connection opened on server")})
     connection.on('close', e=>{console.log("connection close on server")})
-    const KEY = 'User:'
+    USERS = ['Robot', 'RemoteController']
     connection.on('message', msg=>{
         try{
-            msg = JSON.parse(msg.utf8Data)
+            parsed = JSON.parse(msg.utf8Data)
+            console.log("message from", parsed.user)
+            USERS.array.forEach(user => {
+                if(parsed.user != user)
+                    console.error(`User '${parsed.user} not a valid user` )
+            });
         }catch{
             console.log("Message is not JSON:", msg)
         }

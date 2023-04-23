@@ -9,9 +9,9 @@ import platform
 import os
 import json
 
+from my_track import NumpyVideoTrack
 import cv2
 import numpy as np
-import websockets
 
 
 lc = RTCPeerConnection()
@@ -25,32 +25,6 @@ ROOT = os.path.dirname(__file__)
 relay = None
 webcam = None
 
-
-def create_local_tracks(play_from, decode):
-    global relay, webcam
-
-    if play_from:
-        player = MediaPlayer(play_from, decode=decode)
-        return player.audio, player.video
-    else:
-        options = {"framerate": "30", "video_size": "640x480"}
-        if relay is None:
-            if platform.system() == "Darwin":
-                webcam = MediaPlayer(
-                    "default:none", format="avfoundation", options=options
-                )
-            elif platform.system() == "Windows":
-                webcam = MediaPlayer(
-                    "video=Integrated Camera", format="dshow", options=options
-                )
-            else:
-                try:
-                    webcam = MediaPlayer("/dev/video0", format="v4l2", options=options)
-                except Exception:
-                    webcam = MediaPlayer("/dev/video1", format="v4l2", options=options)
-            relay = MediaRelay()
-        return None, relay.subscribe(webcam.video)
-
 def force_codec(lc, sender, forced_codec):
     kind = forced_codec.split("/")[0]
     codecs = RTCRtpSender.getCapabilities(kind).codecs
@@ -60,6 +34,28 @@ def force_codec(lc, sender, forced_codec):
     )
     
     
+async def send_offer(data, client_id):
+    requests.post(
+        url=f"http://0.0.0.0:8081/post_offer_{client_id}",
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin" : "*", 
+            "Access-Control-Allow-Credentials" : 'true ',
+            "Mode":"cors"
+            },)
+    
+
+async def get_answer(client_id):
+    response = requests.get(
+        url=f"http://0.0.0.0:8081/get_answer_{client_id}",
+        headers={
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin" : "*", 
+            "Access-Control-Allow-Credentials" : 'true ',
+            "Mode":"cors"
+            },)
+    return response
 
 def channel_log(channel, t, message):
     print("channel(%s) %s %s" % (channel.label, t, message))
@@ -97,16 +93,10 @@ async def start(lc : RTCPeerConnection):
     dc = lc.createDataChannel("input")
     
     
+
     
-    # open media source
-    audio, video = create_local_tracks(
-        None, decode=True
-    )
-    print("VIdeo:", video)
-    if audio: audio_sender = lc.addTrack(audio)
-    if video:
-        video_sender = lc.addTrack(video)
-        force_codec(lc, video_sender, 'video/h264')
+    video_sender = lc.addTrack(NumpyVideoTrack())
+    force_codec(lc, video_sender, 'video/h264')
 
     
     
@@ -123,17 +113,12 @@ async def start(lc : RTCPeerConnection):
             break
     req_body = json.dumps({
         'type':lc.localDescription.type,
-        'sdp':lc.localDescription.sdp,
-        'client_id': 34,
-        'user':"Robot",
+        'sdp':lc.localDescription.sdp
         }, separators=(',', ':'))
+    await send_offer(req_body, 34)
     
-    
-    #await send_offer(req_body, 34)
-    
-    answer = await send_and_get(req_body)
-    print("Got answer")
-    #answer = await get_answer(34)
+    await asyncio.sleep(4)
+    answer = await get_answer(34)
     answer = answer.json()
     answer_wrapped = RTCSessionDescription(answer['sdp'], answer['type'])
     await lc.setRemoteDescription(answer_wrapped)
@@ -147,19 +132,6 @@ async def start(lc : RTCPeerConnection):
     
 
 
-async def conn():
-    async with websockets.connect('ws://localhost:4000') as websocket:
-            await websocket.send("hello")
-            response = await websocket.recv()
-            print(response)
-async def send_and_get(msg):
-    async with websockets.connect('ws://localhost:4000') as websocket:
-            await websocket.send(msg)
-            return await websocket.recv()
-        
-async def getconn():
-    async with websockets.connect('ws://localhost:4000') as websocket:
-            return websocket
 
 if __name__ == "__main__":
     #asyncio.run(start(lc))
