@@ -13,7 +13,7 @@ from pyee.asyncio import AsyncIOEventEmitter
 
 AUDIO_PTIME = 0.020  # 20ms audio packetization
 VIDEO_CLOCK_RATE = 90000
-VIDEO_PTIME = 1 / 30  # 30fps
+VIDEO_PTIME = 1 / 60  # 60fps
 VIDEO_TIME_BASE = fractions.Fraction(1, VIDEO_CLOCK_RATE)
 
 class NumpyVideoTrack(VideoStreamTrack):
@@ -39,25 +39,18 @@ class NumpyVideoTrack(VideoStreamTrack):
     async def recv(self) -> Frame:
         """
         Receive the next :class:`~av.video.frame.VideoFrame`.
-
-        The base implementation just reads a 640x480 green frame at 30fps,
-        subclass :class:`VideoStreamTrack` to provide a useful implementation.
         """
         import numpy as np
         import os
         import cv2
         x = np.load(f'{os.path.dirname(__file__)}/../../../../data/data/depth/0.npy')
         y = cv2.applyColorMap(np.sqrt(x).astype(np.uint8), cv2.COLORMAP_HSV)
-        a = np.ones((512, 256, 3)).astype(int)*255
         pts, time_base = await self.next_timestamp()
-
         #frame = VideoFrame(width=360, height=640)
-        
-        frame = VideoFrame(width=360, height=640)
-        frame = VideoFrame.from_ndarray(a)
-        
-        #frame = VideoFrame.from_ndarray(a, format='rgb32')
-        for p in frame.planes: p.update(bytes(p.buffer_size))
+        #array = np.random.randint(100, 256, size=(480, 640, 3), dtype=np.uint8)
+        #frame = VideoFrame.from_ndarray(array, format='bgr24')
+        frame = VideoFrame.from_ndarray(y, format='rgb24')
+        #for p in frame.planes: p.update(bytes(p.buffer_size))
         frame.pts = pts
         frame.time_base = time_base
         return frame
