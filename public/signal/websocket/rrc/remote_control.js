@@ -54,7 +54,14 @@ async function start(){
     
 }
 
-
+function waitForAllICE(peerConnection) {
+    return new Promise((fufill, reject) => {
+        peerConnection.onicecandidate = (iceEvent) => {
+            if (iceEvent.candidate === null) fufill()
+        }
+        setTimeout(() => reject("Waited too long for ice candidates"), 10000)
+    }) 
+  }
 async function get_offer_and_send(offer){
     console.log("received offer:",offer);
     await rc.setRemoteDescription(JSON.parse(offer))
@@ -62,8 +69,15 @@ async function get_offer_and_send(offer){
     answer = await rc.createAnswer()
     rc.setLocalDescription(answer);
     await waitForAllICE(rc)//
-    console.log("sending answer:", JSON.stringify(rc.localDescription))
-    await send_answer(JSON.stringify(rc.localDescription), 34) //3
+
+
+    header = {user:'Controller', to:'Robot'}
+    header.type = rc.localDescription.type
+    header.sdp = rc.localDescription.sdp
+
+    const jsonStr = JSON.stringify(header);
+    console.log("sending answer:", jsonStr)
+    await send_answer(jsonStr, 34) //3
     console.log("Submitted answer")
 }
 

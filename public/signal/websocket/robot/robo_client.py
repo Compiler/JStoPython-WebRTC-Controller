@@ -126,36 +126,47 @@ async def start(lc : RTCPeerConnection):
         'sdp':lc.localDescription.sdp,
         'client_id': 34,
         'user':"Robot",
+        'to':"Controller"
         }, separators=(',', ':'))
     
     
     #await send_offer(req_body, 34)
-    
-    answer = await send_and_get(req_body)
-    print("Got answer")
-    #answer = await get_answer(34)
-    answer = answer.json()
-    answer_wrapped = RTCSessionDescription(answer['sdp'], answer['type'])
-    await lc.setRemoteDescription(answer_wrapped)
-    
-    #task = asyncio.Task(start_cam())
-    while True:
-        #dc.send(json.dumps({"now": time.time() * 1000}))
-        #await dc._RTCDataChannel__transport._data_channel_flush()
-        #await dc._RTCDataChannel__transport._transmit()
-        await asyncio.sleep(1)
-    
+    first_msg = json.dumps({
+        'user':"Robot"
+        }, separators=(',', ':'))
+    async with websockets.connect('ws://localhost:4000') as websocket:
+        await websocket.send(first_msg)
+        answer = await websocket.recv()
+        print("First response:", answer)
+        await websocket.send(req_body)
+        answer = await websocket.recv()
+        print("Got answer:\n",answer)
+        answer = json.loads(answer)
+        answer_wrapped = RTCSessionDescription(answer['sdp'], answer['type'])
+        await lc.setRemoteDescription(answer_wrapped)
+        
+        #task = asyncio.Task(start_cam())
+        while True:
+            #dc.send(json.dumps({"now": time.time() * 1000}))
+            #await dc._RTCDataChannel__transport._data_channel_flush()
+            #await dc._RTCDataChannel__transport._transmit()
+            await asyncio.sleep(1)
+        
 
 
 async def conn():
     async with websockets.connect('ws://localhost:4000') as websocket:
-            await websocket.send("hello")
-            response = await websocket.recv()
-            print(response)
+        await websocket.send("hello")
+        response = await websocket.recv()
+        print(response)
+        
 async def send_and_get(msg):
     async with websockets.connect('ws://localhost:4000') as websocket:
-            await websocket.send(msg)
-            return await websocket.recv()
+        await websocket.send(msg)
+        ans = await websocket.recv()
+        print("got answer from socket:", ans)
+        return ans
+
         
 async def getconn():
     async with websockets.connect('ws://localhost:4000') as websocket:
