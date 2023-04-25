@@ -44,14 +44,30 @@ class NumpyVideoTrack(VideoStreamTrack):
         import os
         import cv2
         def load_img(ind):
-            x = np.load(f'{os.path.dirname(__file__)}/../../../../data/data/depth/{ind}.npy')
-            y = cv2.applyColorMap(np.sqrt(x).astype(np.uint8), cv2.COLORMAP_HSV)
-            return y;
+            try:
+                x = np.load(f'{os.path.dirname(__file__)}/../../../../data/data/depth/{ind}.npy')
+                x1 = np.bitwise_and(x, np.ones(x.shape, dtype=np.uint16) * 0xf800)
+                x1 = np.right_shift(x1, np.ones(x.shape, dtype=np.int32) * 8).astype(np.uint8)
+                x2 = np.bitwise_and(x, np.ones(x.shape, dtype=np.uint16) * 0x07e0)
+                x2 = np.right_shift(x2, np.ones(x.shape, dtype=np.int32) * 3).astype(np.uint8)
+                x3 = np.bitwise_and(x, np.ones(x.shape, dtype=np.uint16) * 0x001f)
+                x3 = np.left_shift(x2, np.ones(x.shape, dtype=np.int32) * 3).astype(np.uint8)
+                h, w = x.shape
+                x = np.concatenate((x1.reshape(h, w, 1), x2.reshape(h, w, 1), x3.reshape(h, w, 1)), axis=-1)
+
+                #x = ((x.astype(np.float32) / x.max()) * 255).astype(np.uint8)
+                #x = np.tile(x.reshape((x.shape[0], x.shape[1], 1)), (1,1,3))
+                
+            except Exception as e:
+                print(e)
+            
+            cv2.imshow('depth mask color', x)
+            return x;
         pts, time_base = await self.next_timestamp()
         #frame = VideoFrame(width=360, height=640)
         #array = np.random.randint(100, 256, size=(480, 640, 3), dtype=np.uint8)
         #frame = VideoFrame.from_ndarray(array, format='bgr24')
-        frame = VideoFrame.from_ndarray(load_img(self.count), format='rgb24')
+        frame = VideoFrame.from_ndarray(load_img(0), format='rgb24')
         self.count += 1
         self.count = self.count % 5
         #for p in frame.planes: p.update(bytes(p.buffer_size))
