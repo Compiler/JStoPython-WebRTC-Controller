@@ -71,7 +71,7 @@ async function get_offer_and_send(offer){
     await waitForAllICE(rc)//
 
 
-    header = {user:'Controller', to:'Robot'}
+    header = {from:'Controller', to:'Robot'}
     header.type = rc.localDescription.type
     header.sdp = rc.localDescription.sdp
 
