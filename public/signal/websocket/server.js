@@ -96,8 +96,10 @@ function parse_message(data, connection){
                 //min requirements met to start handling messages between two clients
                 connection_pairs.get(data.uid).beating.set(data.from, true)
                 if(data.hasOwnProperty('to')){
-                    pair = connection_pairs.get(data.uid)
-                    pair.connections.get(data.to).send(JSON.stringify(data))
+                    if(connection_pairs.get(data.uid).connections.has(data.to)){
+                        pair = connection_pairs.get(data.uid)
+                        pair.connections.get(data.to).send(JSON.stringify(data))
+                    }
                 }
             }else{
                 //handle resetting member
