@@ -70,13 +70,13 @@ async function get_offer_and_send(offer){
     rc.setLocalDescription(answer);
     await waitForAllICE(rc)//
 
-
-    header = {from:'Controller', to:'Robot'}
+    header = {}
     header.type = rc.localDescription.type
     header.sdp = rc.localDescription.sdp
 
-    const jsonStr = JSON.stringify(header);
-    console.log("sending answer:", jsonStr)
+   // const jsonStr = JSON.stringify(header);
+    console.log("sending answer:", header)
+    return header
     await send_answer(jsonStr, 34) //3
     console.log("Submitted answer")
 }

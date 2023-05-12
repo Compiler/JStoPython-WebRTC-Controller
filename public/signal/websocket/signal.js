@@ -17,17 +17,24 @@ ws.onmessage = msg => {
     console.log("Got message")
     console.log(msg.data)
     data = JSON.parse(msg.data)
+    msg_header = {"from": 'Controller', 'to' : "Robot"}
     if(data.hasOwnProperty('uid')) uid = data.uid
-    send_msg = {
-        'from':'Controller'
+    if(uid != -44)msg_header['uid'] = uid
+    if(data.hasOwnProperty('sdp')){//respond to offer
+        get_offer_and_send(msg.data).then(ans=>{
+            console.log(ans)
+            console.log(msg_header)
+            answer = {msg_header, ans}
+            msg_header['type'] = ans.type
+            msg_header['sdp'] = ans.sdp
+            ws.send(JSON.stringify(msg_header))
+        })
+
+    }else{
+        console.log("Sending msg header")
+        ws.send(JSON.stringify(msg_header))
     }
-    if(uid != -44)
-    send_msg['uid'] = uid
-    ws.send(JSON.stringify(send_msg))
     //if(data.hasOwnProperty('')){
-    if(count > 1){
-        //get_offer_and_send(msg.data)
-        console.log("Sending answer")
-    }
+    //
 
 } //first message in will be an offer
