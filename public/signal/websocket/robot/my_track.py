@@ -11,10 +11,62 @@ from av.frame import Frame
 from av.packet import Packet
 from pyee.asyncio import AsyncIOEventEmitter
 
+
+from multiprocessing import RawArray, Lock
+import ctypes
+import numpy as np
+
+
 AUDIO_PTIME = 0.020  # 20ms audio packetization
 VIDEO_CLOCK_RATE = 90000
 VIDEO_PTIME = 1 / 60  # 60fps
 VIDEO_TIME_BASE = fractions.Fraction(1, VIDEO_CLOCK_RATE)
+
+class DoubleFramebuffer:
+  def __init__(self, width, height):
+    self.height = height
+    self.width = width
+    self.bufs = [RawArray(ctypes.c_uint8, width * height * 3) for _ in range(2)]
+    self.readidx = 0
+    self.writeidx = 1
+    self.lock = Lock()
+
+    self.write_bufs = [np.frombuffer(buf, dtype=np.uint8)\
+      .reshape((height, width, 3)) for buf in self.bufs]
+    self.read_bufs = None
+
+  def data(self):
+    if self.read_bufs is None:
+      self.read_bufs = [np.frombuffer(buf, dtype=np.uint8)\
+        .reshape((self.height, self.width, 3)) for buf in self.bufs]
+
+    self.lock.acquire()
+    readidx = self.readidx
+    buf = np.copy(self.read_bufs[readidx]).astype(np.uint8)
+    self.lock.release()
+    return buf
+
+  def set(self, frame, dtype="color"):
+    if dtype == "depth": # preset the data
+      x = (frame * 1000.).astype(np.int32) # meters to mm
+      h, w = x.shape
+      x1 = np.right_shift(np.bitwise_and(x, 0x0000f800), 8).astype(np.uint8)
+      x1 = np.bitwise_or(x1, np.random.randint(0x8, size=(h, w), dtype=np.uint8))   # 3 bit noise
+      x2 = np.right_shift(np.bitwise_and(x, 0x000007e0), 3).astype(np.uint8)
+      x2 = np.bitwise_or(x2, np.random.randint(0x4, size=(h, w), dtype=np.uint8))   # 2 bit noise
+      x3 = np.left_shift (np.bitwise_and(x, 0x0000001f), 3).astype(np.uint8)
+      x3 = np.bitwise_or(x3, np.random.randint(0x8, size=(h, w), dtype=np.uint8))   # 3 bit noise
+      frame = np.concatenate((x1.reshape(h, w, 1), x2.reshape(h, w, 1), x3.reshape(h, w, 1)), axis=-1)
+
+    if frame is not None and isinstance(frame, np.ndarray) and \
+        frame.shape == (self.height, self.width, 3):
+      self.lock.acquire()
+      writeidx = self.writeidx
+      self.lock.release()
+      np.copyto(self.write_bufs[writeidx], frame)
+      self.lock.acquire()
+      self.writeidx, self.readidx = self.readidx, self.writeidx
+      self.lock.release()
 
 class NumpyVideoTrack(VideoStreamTrack):
     
@@ -22,6 +74,15 @@ class NumpyVideoTrack(VideoStreamTrack):
 
     _start: float
     _timestamp: int
+
+    def __new__(cls): # use singleton to store DoubleBuffer item on precall
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(NumpyVideoTrack, cls).__new__(cls)
+        return cls.instance
+
+    def __init__(self, buf) -> None:
+        super().__init__()
+        self.buf = buf
     
     async def next_timestamp(self) -> Tuple[int, fractions.Fraction]:
         if self.readyState != "live":
@@ -35,41 +96,18 @@ class NumpyVideoTrack(VideoStreamTrack):
             self._start = time.time()
             self._timestamp = 0
         return self._timestamp, VIDEO_TIME_BASE
-    count = 0
     async def recv(self) -> Frame:
         """
         Receive the next :class:`~av.video.frame.VideoFrame`.
         """
-        import numpy as np
-        import os
-        import cv2
-        def load_img(ind):
-            try:
-                x = np.load(f'{os.path.dirname(__file__)}/../../../../data/data/depth/{ind}.npy')
-                x1 = np.bitwise_and(x, np.ones(x.shape, dtype=np.uint16) * 0xf800)
-                x1 = np.right_shift(x1, np.ones(x.shape, dtype=np.int32) * 8).astype(np.uint8)
-                x2 = np.bitwise_and(x, np.ones(x.shape, dtype=np.uint16) * 0x07e0)
-                x2 = np.right_shift(x2, np.ones(x.shape, dtype=np.int32) * 3).astype(np.uint8)
-                x3 = np.bitwise_and(x, np.ones(x.shape, dtype=np.uint16) * 0x001f)
-                x3 = np.left_shift(x2, np.ones(x.shape, dtype=np.int32) * 3).astype(np.uint8)
-                h, w = x.shape
-                x = np.concatenate((x1.reshape(h, w, 1), x2.reshape(h, w, 1), x3.reshape(h, w, 1)), axis=-1)
+        frame = self.buf.data()
 
-                #x = ((x.astype(np.float32) / x.max()) * 255).astype(np.uint8)
-                #x = np.tile(x.reshape((x.shape[0], x.shape[1], 1)), (1,1,3))
-                
-            except Exception as e:
-                print(e)
-            
-            return x;
-        pts, time_base = await self.next_timestamp()
-        #frame = VideoFrame(width=360, height=640)
-        #array = np.random.randint(100, 256, size=(480, 640, 3), dtype=np.uint8)
-        #frame = VideoFrame.from_ndarray(array, format='bgr24')
-        frame = VideoFrame.from_ndarray(load_img(0), format='rgb24')
-        self.count += 1
-        self.count = self.count % 5
-        #for p in frame.planes: p.update(bytes(p.buffer_size))
-        frame.pts = pts
-        frame.time_base = time_base
+        if frame is not None:
+            frame = VideoFrame.from_ndarray(frame, format="bgr24")
+
+            pts, time_base = await self.next_timestamp()
+            frame.pts = pts
+            frame.time_base = time_base
+        else:
+            frame = None
         return frame
