@@ -1,10 +1,19 @@
 const http = require('http')
 const { parse } = require('path')
+const fs = require('fs')
 const WebSocketServer = require('websocket').server
 let connection = null
 
 const httpserver = http.createServer((req, res)=>{
-    console.log("request received")
+    if (req.url === '/') {
+        fs.readFile('./rrc/remote_control_index.html',
+        function(err, html) {
+            if (err) throw err;
+            res.writeHeader(200, {'Content-Type': 'text/html'});
+            res.write(html);
+            res.end();
+        })
+    }
 })
 
 const websocket = new WebSocketServer({

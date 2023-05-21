@@ -5,7 +5,9 @@ import json
 import websockets
 from websockets import WebSocketClientProtocol
 from . import robot_rtc_helper
-server = 'ws://localhost:4000'
+from . import config
+
+server = f'ws://{config.server}:{config.ws_port}'
 my_uid = -44
 from_name = 'Robot'
 to_name = 'Controller'
