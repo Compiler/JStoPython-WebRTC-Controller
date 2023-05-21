@@ -80,9 +80,9 @@ class NumpyVideoTrack(VideoStreamTrack):
             cls.instance = super(NumpyVideoTrack, cls).__new__(cls)
         return cls.instance
 
-    def __init__(self, buf) -> None:
+    def __init__(self, w, h) -> None:
         super().__init__()
-        self.buf = buf
+        self.buf = DoubleFramebuffer(w, h)
     
     async def next_timestamp(self) -> Tuple[int, fractions.Fraction]:
         if self.readyState != "live":
