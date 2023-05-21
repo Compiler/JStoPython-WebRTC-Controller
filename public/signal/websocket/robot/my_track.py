@@ -9,8 +9,6 @@ from typing import Tuple, Union
 from av import AudioFrame, VideoFrame
 from av.frame import Frame
 from av.packet import Packet
-from pyee.asyncio import AsyncIOEventEmitter
-
 
 from multiprocessing import RawArray, Lock
 import ctypes
@@ -68,6 +66,13 @@ class DoubleFramebuffer:
       self.writeidx, self.readidx = self.readidx, self.writeidx
       self.lock.release()
 
+class Singleton (type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
 class NumpyVideoTrack(VideoStreamTrack):
     
     kind = "video"
@@ -75,14 +80,9 @@ class NumpyVideoTrack(VideoStreamTrack):
     _start: float
     _timestamp: int
 
-    def __new__(cls): # use singleton to store DoubleBuffer item on precall
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(NumpyVideoTrack, cls).__new__(cls)
-        return cls.instance
-
-    def __init__(self, w, h) -> None:
+    def __init__(self, buf) -> None:
         super().__init__()
-        self.buf = DoubleFramebuffer(w, h)
+        self.buf = buf
     
     async def next_timestamp(self) -> Tuple[int, fractions.Fraction]:
         if self.readyState != "live":
@@ -100,14 +100,18 @@ class NumpyVideoTrack(VideoStreamTrack):
         """
         Receive the next :class:`~av.video.frame.VideoFrame`.
         """
-        frame = self.buf.data()
+        try:
+          frame = self.buf.data()
 
-        if frame is not None:
-            frame = VideoFrame.from_ndarray(frame, format="bgr24")
+          if frame is not None:
+              frame = VideoFrame.from_ndarray(frame, format="bgr24")
 
-            pts, time_base = await self.next_timestamp()
-            frame.pts = pts
-            frame.time_base = time_base
-        else:
-            frame = None
+              pts, time_base = await self.next_timestamp()
+              frame.pts = pts
+              frame.time_base = time_base
+          else:
+              frame = None
+        except Exception as e:
+           print("NumpyVideoTrack Error:", e)
+           frame = None
         return frame
