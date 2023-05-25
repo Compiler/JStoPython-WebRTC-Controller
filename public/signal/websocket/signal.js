@@ -1,7 +1,7 @@
 
 
 
-let ws = new WebSocket("ws://localhost:4000")
+let ws = new WebSocket("ws://192.241.156.85:80")
 ws.onopen = o =>{
     ws.send(JSON.stringify({'from':'Controller'}))
     console.log("Opened connection")

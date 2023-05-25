@@ -1,19 +1,43 @@
 const http = require('http')
 const { parse } = require('path')
+
+
+const express = require('express')
+const bodyParser = require('body-parser')
+const cors = require('cors')
+const app = express()
+
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(cors())
+app.use(bodyParser.json())
+
 const WebSocketServer = require('websocket').server
 let connection = null
 
-const httpserver = http.createServer((req, res)=>{
-    console.log("request received")
+
+app.get('/', (req, res) => {
+    res.sendFile('/home/lukeroche/app/JStoPython-WebRTC-Controller/public/signal/websocket/rrc/remote_control_index.html');
+})
+app.get('/styles.css', (req, res) => {
+    res.sendFile('/home/lukeroche/app/JStoPython-WebRTC-Controller/public/signal/websocket/rrc/styles.css');
 })
 
+app.get('/remote_control.js', (req, res) => {
+    res.sendFile('/home/lukeroche/app/JStoPython-WebRTC-Controller/public/signal/websocket/rrc/remote_control.js');
+})
+app.get('/signal.js', (req, res) => {
+    res.sendFile('/home/lukeroche/app/JStoPython-WebRTC-Controller/public/signal/websocket/signal.js');
+})
+const httpserver = http.createServer(app)
 const websocket = new WebSocketServer({
-    "httpServer":httpserver,//handshake
+    "httpServer": httpserver,//handshake
 })
-
 
 
 ROBOT_JSON_NAME = "Robot"
+
+
+
 CONTROLLER_JSON_NAME = "Controller"
 uids = new Set();
 connection_pairs = new Map();

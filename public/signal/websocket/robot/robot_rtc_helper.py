@@ -77,18 +77,18 @@ async def set_answer(answer):
     answer_wrapped = RTCSessionDescription(answer['sdp'], answer['type'])
     await lc.setRemoteDescription(answer_wrapped)
 
-async def get_offer():
+async def get_offer(video_track):
     dc = lc.createDataChannel("input")
     
-    from my_track import NumpyVideoTrack
-    video_sender = lc.addTrack(NumpyVideoTrack())
+    # from .my_track import NumpyVideoTrack
+    video_sender = lc.addTrack(video_track)
     force_codec(lc, video_sender, 'video/h264')
 
     
     channel_log(dc, "-", "created by local party")
 
     await setup_callbacks(lc, dc)
-    print(dc.event_names)
+    # print(dc.event_names)
     #lc.onicecandidate = lambda e : print("SDP:", json.dumps(lc.localDescription, separators=(',', ':'))); 
     offer = await lc.createOffer()
     await lc.setLocalDescription(offer)
