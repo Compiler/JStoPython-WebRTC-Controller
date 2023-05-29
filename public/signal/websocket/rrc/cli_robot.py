@@ -4,11 +4,11 @@ import asyncio
 import json
 import websockets
 from websockets import WebSocketClientProtocol
-import public.signal.websocket.rrc.cli_robot_rtc_helper as cli_robot_rtc_helper
-server = 'ws://localhost:4000'
+import cli_robot_rtc_helper
+server = 'ws://192.241.156.85:80'
 my_uid = -44
-from_name = 'Robot'
-to_name = 'Controller'
+from_name = 'Controller'
+to_name = 'Robot'
 async def generate_offer():
     msg_dict = {
         'from':from_name,
@@ -29,25 +29,36 @@ async def establish_connection(websocket):
     }, separators=(',', ':'))
     await websocket.send(first_msg)
 
-from . import cli_robot_rtc_helper
 async def handle_message(websocket, message):
     global my_uid
     print("received:", message)
     try:
         data = json.loads(message)
-        if('uid' in data): my_uid = data['uid']
+        print("sdp in data?", 'sdp' in data)
+        if('uid' in data): 
+            my_uid = data['uid']
+            print("Set uid to", my_uid)
         if('request' in data):
             if(data['request'] == 'answer'):
-                offer = await cli_robot_rtc_helper.generate_answer()
+                print("Generating answer")
+                answer = await cli_robot_rtc_helper.generate_answer()
                 await asyncio.sleep(2)
-                print("sending offer")
-                await websocket.send(offer)
+                print("sending answer")
+                await websocket.send(answer)
                 print("sent")
             if(data['request'] == 'heartbeat'):
                 await websocket.send(json.dumps({'from':from_name,'uid':my_uid,'heartbeat':'beating'}, separators=(',', ':')))
+        
+        elif('sdp' in data):
+            if('type' in data and data['type'] == 'offer'):
+                await cli_robot_rtc_helper.set_offer(data)
+                print("Generating answer")
+                answer = await cli_robot_rtc_helper.generate_answer()
+                await asyncio.sleep(2)
+                print("sending answer")
+                await websocket.send(answer)
+                print("sent")
                 
-        if('type' in data and data['type'] == 'offer'):
-            await cli_robot_rtc_helper.set_offer(data)
     except Exception as e:
         print('Error', e)
         

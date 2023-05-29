@@ -4,8 +4,8 @@ import asyncio
 import json
 import websockets
 from websockets import WebSocketClientProtocol
-from . import robot_rtc_helper
-from . import config
+import robot_rtc_helper
+import config
 
 server = f'ws://{config.server}:{config.ws_port}'
 my_uid = -44

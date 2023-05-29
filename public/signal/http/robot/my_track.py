@@ -16,6 +16,10 @@ VIDEO_CLOCK_RATE = 90000
 VIDEO_PTIME = 1 / 60  # 60fps
 VIDEO_TIME_BASE = fractions.Fraction(1, VIDEO_CLOCK_RATE)
 
+
+class NullGreenTrack(VideoStreamTrack):pass
+
+
 class NumpyVideoTrack(VideoStreamTrack):
     
     kind = "video"

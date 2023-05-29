@@ -81,6 +81,9 @@ async def get_offer(video_track):
     dc = lc.createDataChannel("input")
     
     # from .my_track import NumpyVideoTrack
+    if(video_track == None):
+        import my_track
+        video_track = my_track.VideoStreamTrack();
     video_sender = lc.addTrack(video_track)
     force_codec(lc, video_sender, 'video/h264')
 

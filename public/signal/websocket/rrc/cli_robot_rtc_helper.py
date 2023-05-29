@@ -58,9 +58,24 @@ from aiortc.rtcrtpsender import RTCRtpSender
 
 ROOT = os.path.dirname(__file__)
 offer = None
-def generate_answer():
-    assert(offer is not None)
+async def generate_answer():
     
+    #await setup_callbacks(lc, lc.dc)
+    answer = await lc.createAnswer()
+    await lc.setLocalDescription(answer)
+    while True:
+        print(f"icegatheringstate:{lc.iceGatheringState}")
+        if lc.iceGatheringState == "complete":
+            break
+    req_body = {
+        'type':lc.localDescription.type,
+        'sdp':lc.localDescription.sdp,
+        'from':from_name,
+        'to':to_name
+    }
+
+    return req_body
 async def set_offer(offer):
+    print("Setting offer")
     offer_wrapped = RTCSessionDescription(offer['sdp'], offer['type'])
     await lc.setRemoteDescription(offer_wrapped)
