@@ -45,7 +45,7 @@ async def handle_message(websocket, message, video_track):
             await websocket.send(offer)
             print("sent")
         if(data['request'] == 'heartbeat'):
-            await websocket.send(json.dumps({'from':'Robot','uid':my_uid,'heartbeat':'beating'}, separators=(',', ':')))
+            await websocket.send(json.dumps({'from':from_name,'uid':my_uid,'heartbeat':'beating'}, separators=(',', ':')))
             
     if('type' in data and data['type'] == 'answer'):
         await robot_rtc_helper.set_answer(data)
