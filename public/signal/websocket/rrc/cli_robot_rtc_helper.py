@@ -49,6 +49,9 @@ async def setup_callbacks(lc : RTCPeerConnection):
     @lc.on("datachannel")
     async def on_datachannel(e):
         dc = e
+        print("Dc established")
+        dc.send("keydown:KeyA")
+        dc.send("keyup:KeyA")
         @dc.on("message")
         async def on_message(e):    
             print("from robot:", e.data)
@@ -101,23 +104,30 @@ async def run(buf):
     global cur_frame
     print("Entered")
     while(cur_frame is None): await asyncio.sleep(2)
+    count = 0;
     while True:
-        try:
-            f = await cur_frame.recv()
-            print("IN loop")
-            if not f:
-                await asyncio.sleep(2)
-            else:
-                print("Running")
-                i = np.array(f.to_image())
-                print(i.shape)
-                buf[:] = i.flatten()
-                #gray = np.ones((480, 640,  3), np.uint8) * 128
-                #cv2.imshow('v', gray); cv2.waitKey(0);
-                #cv2.imshow('view', i)
-                #cv2.waitKey(1);
-        except Exception as e:
-            print("error", e)
+        #try:
+        f = await cur_frame.recv()
+        #print("IN loop")
+        if not f:
+            await asyncio.sleep(2)
+        else:
+            #print("Running")
+            i = np.array(f.to_image())
+            if not dc == None:dc.send('keydown:KeyA')  
+            if count == 15 and not dc == None:
+                print("Send message")
+                dc.send('keyup:KeyA')
+            count = (count + 1) % 100
+            print(count)
+            #print(i.shape)
+            buf[:] = i.flatten()
+            #gray = np.ones((480, 640,  3), np.uint8) * 128
+            #cv2.imshow('v', gray); cv2.waitKey(0);
+            #cv2.imshow('view', i)
+            #cv2.waitKey(1);
+        # except Exception as e:
+        #     print("error", e)
     print("Terminated")
     # while True:
     #     try:

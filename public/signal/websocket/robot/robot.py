@@ -45,7 +45,7 @@ async def handle_message(websocket, message, video_track):
             await websocket.send(offer)
             print("sent")
         if(data['request'] == 'heartbeat'):
-            await websocket.send(json.dumps({'from':from_name,'uid':my_uid,'heartbeat':'beating'}, separators=(',', ':')))
+            await websocket.send(json.dumps({'from':'Robot','uid':my_uid,'heartbeat':'beating'}, separators=(',', ':')))
             
     if('type' in data and data['type'] == 'answer'):
         await robot_rtc_helper.set_answer(data)
@@ -76,6 +76,8 @@ async def main(video_track):
 #         return websocket
 
 if __name__ == "__main__":
-    my_uid = -44
-    print("NO LONGER USABLE CAUSE WE HACKED IT")
+    #my_uid = -44
+    #print("NO LONGER USABLE CAUSE WE HACKED IT")
     asyncio.run(main(None))
+    
+    ##two tasks

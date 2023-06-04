@@ -18,7 +18,7 @@ from aiortc.rtcrtpsender import RTCRtpSender
 
 from_name = 'Robot'
 to_name = 'Controller'
-
+dc = None
 async def setup_callbacks(lc : RTCPeerConnection, dc):
     #dc.onmessage = lambda e : print("Message from robot:", e.data, e)
 
@@ -40,6 +40,16 @@ async def setup_callbacks(lc : RTCPeerConnection, dc):
     async def on_icecandidate(e):
         print("SDP:", json.dumps(lc.localDescription, separators=(',', ':')))
         
+    @lc.on("datachannel")
+    async def on_datachannel(e):
+        dc = e
+        print("Dc established")
+        @dc.on("message")
+        async def on_message(e):    
+            print("from robot:", e.data)
+        @dc.on("open")
+        async def on_open(e):    
+            print("Data Channel Connection opened on remote")
         
         
         
@@ -77,7 +87,13 @@ async def set_answer(answer):
     answer_wrapped = RTCSessionDescription(answer['sdp'], answer['type'])
     await lc.setRemoteDescription(answer_wrapped)
 
+
+async def send_msg_to_client(msg): 
+    global dc
+    if dc: dc.send(msg)
+
 async def get_offer(video_track):
+    global dc
     dc = lc.createDataChannel("input")
     
     # from .my_track import NumpyVideoTrack
