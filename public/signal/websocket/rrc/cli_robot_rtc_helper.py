@@ -48,19 +48,22 @@ async def setup_callbacks(lc : RTCPeerConnection):
         
     @lc.on("datachannel")
     async def on_datachannel(e):
-        dc = e
         print("Dc established")
+        global dc
+        dc = e
+        
         dc.send("keydown:KeyA")
         dc.send("keyup:KeyA")
         @dc.on("message")
-        async def on_message(e):    
-            print("from robot:", e.data)
+        async def on_message(msg):   
+            print("from robot:", msg)
         @dc.on("open")
-        async def on_open(e):    
+        async def on_open():    
             print("Data Channel Connection opened on remote")
         
         
-        
+
+
         
 
 
@@ -99,8 +102,9 @@ async def set_offer(offer):
     offer_wrapped = RTCSessionDescription(offer['sdp'], offer['type'])
     await lc.setRemoteDescription(offer_wrapped)
     
-async def run(buf):
+async def run():
     import cv2
+    global dc
     global cur_frame
     print("Entered")
     while(cur_frame is None): await asyncio.sleep(2)
@@ -113,15 +117,16 @@ async def run(buf):
             await asyncio.sleep(2)
         else:
             #print("Running")
-            i = np.array(f.to_image())
-            if not dc == None:dc.send('keydown:KeyA')  
-            if count == 15 and not dc == None:
-                print("Send message")
-                dc.send('keyup:KeyA')
+            if count == 15 :
+                if not dc == None:
+                    print("Dc send msg to robo xD")
+                    dc.send('keydown:KeyA')
+                    dc.send('keyup:KeyA')
             count = (count + 1) % 100
-            print(count)
             #print(i.shape)
-            buf[:] = i.flatten()
+            np_frame = np.array(f.to_image())
+            cv2.imshow('robo_view', np_frame)
+            cv2.waitKey(1);
             #gray = np.ones((480, 640,  3), np.uint8) * 128
             #cv2.imshow('v', gray); cv2.waitKey(0);
             #cv2.imshow('view', i)

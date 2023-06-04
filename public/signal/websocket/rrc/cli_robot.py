@@ -75,19 +75,23 @@ async def main():
 
 # async def establish_connection():
 #         return websocket
-import multiprocessing
-from multiprocessing import RawArray
-from multiprocessing import Process
-import ctypes
-screen_buffer = RawArray(ctypes.c_uint8, (360 * 640 * 3))
-def asyncworker(buf):
-    global screen_buffer
-    screen_buffer = buf
-    
+
+def run_screen():
+    import numpy as np
+    while True:
+        cv2.waitKey(1)
+
+  
+
+import cv2
+
+if __name__ == "__main__":
+    my_uid = -44
+      
     loop = asyncio.new_event_loop()
     created = True
-    main_task = loop.create_task(cli_robot_rtc_helper.run(buf))
     signaling_task = loop.create_task(main())
+    main_task = loop.create_task(cli_robot_rtc_helper.run())
 
     if created:
         try:
@@ -98,16 +102,5 @@ def asyncworker(buf):
         finally:
             loop.run_until_complete(loop.shutdown_asyncgens())
             loop.close()
-
-import cv2
-if __name__ == "__main__":
-    my_uid = -44
     
-    process = Process(target=asyncworker, args=(screen_buffer,))
-    
-    process.start()
-    import numpy as np
-    while True:
-        cv2.imshow('this is NEVER going to work!', np.array(screen_buffer[:], np.uint8).reshape((360,640,3)))
-        cv2.waitKey(1)
     
