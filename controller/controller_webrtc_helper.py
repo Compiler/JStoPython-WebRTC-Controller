@@ -18,6 +18,8 @@ from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.contrib.media import MediaPlayer, MediaRelay
 from aiortc.rtcrtpsender import RTCRtpSender
 import open3d
+
+from transforms import Transforms
 class ControllerWRTC:
     TO_NAME = 'Robot'
     FROM_NAME = 'Controller'
@@ -72,17 +74,7 @@ class ControllerWRTC:
             
             
 
-    async def rgb2depth(self, frame):
-        R = np.left_shift (np.bitwise_and(frame[:, :, 2], 0xf8).astype(np.uint16), 8)# 00000000 RRRRR000 -> RRRRR000 00000000
-        G = np.left_shift (np.bitwise_and(frame[:, :, 1], 0xfc).astype(np.uint16), 3)# 00000000 GGGGGG00 -> 00000GGG GGG00000
-        B = np.right_shift(np.bitwise_and(frame[:, :, 0], 0xf8).astype(np.uint16), 3)
-        I = np.bitwise_or(R, G, B)
-        return I
-
-            
-
-    async def depth2rgb(self, depth):
-        return cv2.applyColorMap(np.sqrt(depth).astype(np.uint8), cv2.COLORMAP_HSV)
+   
 
 
 
@@ -127,8 +119,8 @@ class ControllerWRTC:
                 
                 
                 np_frame = np.array(f.to_image())
-                d_frame = await self.rgb2depth(np_frame)
-                f_frame = await self.depth2rgb(d_frame)
+                d_frame = await Transforms.rgb2depth(np_frame)
+                f_frame = await Transforms.depth2rgb(d_frame)
                 cv2.imshow('robo_view', f_frame)
                 cv2.waitKey(1);
 

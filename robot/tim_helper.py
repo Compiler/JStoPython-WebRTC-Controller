@@ -18,14 +18,30 @@ from aiortc.rtcrtpsender import RTCRtpSender
 
 from_name = 'Robot'
 to_name = 'Controller'
+
+_keyboard_values = None
 dc = None
+
+
+def send_msg_to_client(msg): 
+    global dc
+    if dc: dc.send(msg)
+
 async def setup_callbacks(lc : RTCPeerConnection, dc):
     #dc.onmessage = lambda e : print("Message from robot:", e.data, e)
 
     @dc.on("message")
     def on_message(message):
-        if isinstance(message, str):
-            print(message)
+        global _keyboard_values
+        if isinstance(message, str) and _keyboard_values is not None:
+            print("recvd event: ", message)
+            event, data = message.split(":")
+            ch = ord(data[3])
+            _keyboard_values.acquire()
+            if event in ["keydown", "keyup"]:
+                _keyboard_values[ch] = int(len(event) > 6)
+            _keyboard_values.release()
+            send_msg_to_client("key received")
 
     @lc.on("connectionstatechange")
     async def on_connectionstatechange():
@@ -40,25 +56,9 @@ async def setup_callbacks(lc : RTCPeerConnection, dc):
     async def on_icecandidate(e):
         print("SDP:", json.dumps(lc.localDescription, separators=(',', ':')))
         
-    @lc.on("datachannel")
-    async def on_datachannel(e):
-        dc = e
-        print("Dc established")
-        @dc.on("message")
-        async def on_message(e):    
-            print("from robot:", e.data)
-        @dc.on("open")
-        async def on_open(e):    
-            print("Data Channel Connection opened on remote")
         
         
         
-
-
-
-
-
-
 
 
 lc = RTCPeerConnection()
@@ -87,24 +87,18 @@ async def set_answer(answer):
     answer_wrapped = RTCSessionDescription(answer['sdp'], answer['type'])
     await lc.setRemoteDescription(answer_wrapped)
 
-
-async def send_msg_to_client(msg): 
-    global dc
-    if dc: dc.send(msg)
-
-async def get_offer(video_track):
+async def get_offer(video_track, keyboard_values):
     global dc
     dc = lc.createDataChannel("input")
+    channel_log(dc, "-", "created by local party")
+
+
+    global _keyboard_values
+    _keyboard_values = keyboard_values
     
     # from .my_track import NumpyVideoTrack
-    if(video_track == None):
-        import my_track
-        video_track = my_track.VideoStreamTrack();
     video_sender = lc.addTrack(video_track)
     force_codec(lc, video_sender, 'video/h264')
-
-    
-    channel_log(dc, "-", "created by local party")
 
     await setup_callbacks(lc, dc)
     # print(dc.event_names)
