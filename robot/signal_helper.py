@@ -5,20 +5,18 @@ import json
 import websockets
 from websockets import WebSocketClientProtocol
 from . import config
-from robot_webrtc_helper import RobotWRTC
+from .robot_webrtc_helper import RobotWRTC
 class RobotSignaller:
 
-    FROM_NAME = 'Robot'
-    TO_NAME = 'Controller'
     def __init__(self, wrtc: RobotWRTC):
         self.server = f'ws://{config.server}:{config.ws_port}'
-        self.self.uid = -44
+        self.uid = -44
         self.wrtc = wrtc
         
     async def generate_offer(self):
         msg_dict = {
-            'from':RobotSignaller.FROM_NAME,
-            'to':RobotSignaller.TO_NAME,
+            'from':config.FROM_NAME,
+            'to':config.TO_NAME,
             "offer":"not here yet lmao",
             'uid' : self.uid,
             
@@ -31,7 +29,7 @@ class RobotSignaller:
         return msg
     async def establish_connection(self, websocket):
         first_msg = json.dumps({
-            'from':RobotSignaller.FROM_NAME
+            'from':config.FROM_NAME
         }, separators=(',', ':'))
         await websocket.send(first_msg)
         

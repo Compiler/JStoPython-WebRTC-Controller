@@ -14,24 +14,30 @@ import numpy as np
 import websockets
 from aiortc.contrib.media import MediaPlayer, MediaRelay
 from aiortc.rtcrtpsender import RTCRtpSender
-from signal_helper import RobotSignaller
+from . import config
+from .my_track import NumpyVideoTrack
 from aiortc.contrib.media import MediaPlayer, MediaRelay
 from aiortc.rtcrtpsender import RTCRtpSender
 class RobotWRTC:
     
-    def __init__(self, video_track, keyboard_values) -> None:
+    def __init__(self, video_buffer, keyboard_values) -> None:
+
 
         self.ROOT = os.path.dirname(__file__)
         self.keyboard_values = keyboard_values
-        self.video_track = video_track
+        self.video_buffer = video_buffer
         self.dc = None
 
+        self.track = None
         self.lc = RTCPeerConnection()
         self.alive = True
 
 
     def _reset_(self):
         self.dc = None
+        if self.track is not None:
+            self.track.stop()
+            self.track = None
         self.lc = RTCPeerConnection()
         self.alive = True 
 
@@ -55,7 +61,7 @@ class RobotWRTC:
 
         @self.lc.on("connectionstatechange")
         async def on_connectionstatechange():
-            print("Connection state is %s", self.lc.connectionState)
+            print("Connection state is %s" % self.lc.connectionState)
             if self.lc.connectionState == "failed" or self.lc.connectionState == 'disconnected':
                 self.alive = False
                 await self.lc.close()
@@ -94,9 +100,9 @@ class RobotWRTC:
         self.channel_log(self.dc, "-", "created by local party")
 
 
-        # from .my_track import NumpyVideoTrack
-        video_sender = self.lc.addTrack(self.video_track)
-        self.force_codec(self.lc, video_sender, 'video/h264')
+        self.track = NumpyVideoTrack(self.video_buffer)
+        video_sender = self.lc.addTrack(self.track)
+        self.force_codec(video_sender, 'video/h264')
 
         await self.setup_callbacks()
         # print(self.dc.event_names)
@@ -110,8 +116,8 @@ class RobotWRTC:
         req_body = {
             'type':self.lc.localDescription.type,
             'sdp':self.lc.localDescription.sdp,
-            'from':RobotSignaller.FROM_NAME,
-            'to':RobotSignaller.TO_NAME
+            'from':config.FROM_NAME,
+            'to':config.TO_NAME
             }
         
         return req_body
