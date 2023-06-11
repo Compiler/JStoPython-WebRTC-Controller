@@ -5,10 +5,9 @@ from websockets import WebSocketClientProtocol
 import cv2
 from controller_webrtc_helper import ControllerWRTC
 from signal_helper import ControllerSignaller
-
 if __name__ == "__main__":
-      
-    server = 'ws://192.241.156.85:80'
+    import config
+    server = f'ws://{config.server}:{config.ws_port}'
     webrtc_helper = ControllerWRTC()
     signaller = ControllerSignaller(server, webrtc_helper)
       
